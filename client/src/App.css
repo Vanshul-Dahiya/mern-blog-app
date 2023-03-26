@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   color: #222;
 }
@@ -47,11 +51,37 @@ div.post p.info {
   gap: 10px;
 }
 
-div.post p.info a.author{
+div.post p.info a.author {
   color: #334;
 }
 
-div.post p.summary{
+div.post p.summary {
   margin: 10px 0;
   line-height: 1.4rem;
+}
+form.login,
+form.register {
+  max-width: 400px;
+  margin: 0 auto;
+}
+input {
+  display: block;
+  margin-bottom: 5px;
+  width: 100%;
+  padding: 5px 10px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background-color: #fff;
+}
+button {
+  width: 100%;
+  display: block;
+  background-color: #555;
+  border: 0;
+  color: #fff;
+  border-radius: 10px;
+  padding: 7px 0;
+}
+form h1 {
+  text-align: center;
 }
