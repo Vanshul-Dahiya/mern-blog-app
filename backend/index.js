@@ -4,6 +4,8 @@ const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const User = require("./models/User");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 
 dotenv.config();
 
@@ -11,8 +13,9 @@ const app = express();
 
 const salt = bcrypt.genSaltSync(10);
 
-app.use(cors());
+app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 app.use(express.json());
+app.use(cookieParser());
 
 // mongo connection
 mongoose.connect(process.env.MONGO_URL).then(() => {
@@ -42,11 +45,40 @@ app.post("/login", async (req, res) => {
   try {
     const userDoc = await User.findOne({ username });
     const passOk = bcrypt.compareSync(password, userDoc.password);
-    res.json(passOk);
+    if (passOk) {
+      // log in
+      jwt.sign(
+        { username, id: userDoc._id },
+        process.env.SECRET_KEY,
+        {},
+        (e, token) => {
+          if (e) throw e;
+          res.cookie("token", token).json("ok");
+        }
+      );
+      //   res.json()
+    } else {
+      res.status(400).json("wrong credentials");
+    }
   } catch (error) {
     console.log(error);
     res.status(400).json(error);
   }
+});
+
+// return profile info
+app.get("/profile", (req, res) => {
+  const { token } = req.cookies;
+  jwt.verify(token, process.env.SECRET_KEY, {}, (err, info) => {
+    if (err) throw err;
+    res.json(info);
+  });
+});
+
+// logout
+app.post("/logout", (req, res) => {
+  // set cookie to empty
+  res.cookie("token", "").json("ok");
 });
 
 app.listen(PORT, () => {
