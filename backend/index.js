@@ -3,9 +3,13 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const User = require("./models/User");
+const Post = require("./models/Post");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const multer = require("multer");
+const uploadMiddleware = multer({ dest: "uploads/" });
+const fs = require("fs");
 
 dotenv.config();
 
@@ -53,7 +57,10 @@ app.post("/login", async (req, res) => {
         {},
         (e, token) => {
           if (e) throw e;
-          res.cookie("token", token).json("ok");
+          res.cookie("token", token).json({
+            id: userDoc._id,
+            username,
+          });
         }
       );
       //   res.json()
@@ -79,6 +86,25 @@ app.get("/profile", (req, res) => {
 app.post("/logout", (req, res) => {
   // set cookie to empty
   res.cookie("token", "").json("ok");
+});
+
+// create blog post
+app.post("/post", uploadMiddleware.single("file"), async (req, res) => {
+  const { originalname, path } = req.file;
+  const parts = originalname.split(".");
+  const ext = parts[parts.length - 1];
+  const newPath = path + "." + ext;
+  fs.renameSync(path, newPath);
+
+  const { title, summary, content } = req.body;
+  const postDoc = await Post.create({
+    title,
+    summary,
+    content,
+    cover: newPath,
+  });
+
+  res.json(postDoc);
 });
 
 app.listen(PORT, () => {
