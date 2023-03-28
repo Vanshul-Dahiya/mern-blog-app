@@ -20,11 +20,17 @@ const salt = bcrypt.genSaltSync(10);
 app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 app.use(express.json());
 app.use(cookieParser());
+app.use("/uploads", express.static(__dirname + "/uploads"));
 
 // mongo connection
-mongoose.connect(process.env.MONGO_URL).then(() => {
-  console.log("connected to DB");
-});
+mongoose
+  .connect(process.env.MONGO_URL)
+  .then(() => {
+    console.log("connected to DB");
+  })
+  .catch((error) => {
+    console.log(error);
+  });
 
 const PORT = 4000;
 
@@ -78,7 +84,7 @@ app.get("/profile", (req, res) => {
   const { token } = req.cookies;
   jwt.verify(token, process.env.SECRET_KEY, {}, (err, info) => {
     if (err) throw err;
-    res.json(info);
+    return res.json(info);
   });
 });
 
@@ -96,15 +102,30 @@ app.post("/post", uploadMiddleware.single("file"), async (req, res) => {
   const newPath = path + "." + ext;
   fs.renameSync(path, newPath);
 
-  const { title, summary, content } = req.body;
-  const postDoc = await Post.create({
-    title,
-    summary,
-    content,
-    cover: newPath,
-  });
+  const { token } = req.cookies;
+  jwt.verify(token, process.env.SECRET_KEY, {}, async (err, info) => {
+    if (err) throw err;
+    const { title, summary, content } = req.body;
+    const postDoc = await Post.create({
+      title,
+      summary,
+      content,
+      cover: newPath,
+      author: info.id,
+    });
 
-  res.json(postDoc);
+    return res.json(postDoc);
+  });
+});
+
+// get posts
+app.get("/post", async (req, res) => {
+  return res.json(
+    await Post.find()
+      .populate("author", ["username"])
+      .sort({ createdAt: -1 })
+      .limit(20)
+  );
 });
 
 app.listen(PORT, () => {
