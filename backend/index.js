@@ -128,6 +128,13 @@ app.get("/post", async (req, res) => {
   );
 });
 
+// get info on a particular blog
+app.get("/post/:id", async (req, res) => {
+  const { id } = req.params;
+  const postDoc = await Post.findById(id).populate("author", ["username"]);
+  return res.json(postDoc);
+});
+
 app.listen(PORT, () => {
   console.log(`running on ${PORT} `);
 });
